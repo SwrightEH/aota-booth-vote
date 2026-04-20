@@ -1,1 +1,0 @@
-# aota-booth-vote
