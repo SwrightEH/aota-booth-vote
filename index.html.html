@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<!-- iPad web app support -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Booth Vote">
+<title>Vote - Favorite Social Platform</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  
+  :root {
+    --ocean: #024D64;
+    --magenta: #CE0283;
+    --green: #A1D884;
+    --yellow: #E1D555;
+    --ecru: #C8BBAC;
+  }
+
+  html, body {
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: auto;
+  }
+
+  body {
+    font-family: 'Inter', Arial, sans-serif;
+    background: var(--ocean);
+    color: #fff;
+    min-height: 100dvh;
+    min-height: -webkit-fill-available;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    padding-top: env(safe-area-inset-top, 24px);
+    padding-bottom: env(safe-area-inset-bottom, 24px);
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    touch-action: manipulation;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 600px;
+    text-align: center;
+  }
+
+  h1 {
+    font-size: clamp(1.6rem, 5vw, 2.4rem);
+    font-weight: 700;
+    margin-bottom: 6px;
+    letter-spacing: -0.02em;
+  }
+
+  .subtitle {
+    font-size: clamp(0.95rem, 2.5vw, 1.15rem);
+    font-weight: 400;
+    opacity: 0.7;
+    margin-bottom: 32px;
+  }
+
+  .options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 36px;
+  }
+
+  .vote-btn {
+    position: relative;
+    background: rgba(255,255,255,0.08);
+    border: 2px solid rgba(255,255,255,0.15);
+    border-radius: 16px;
+    padding: 28px 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    -webkit-tap-highlight-color: transparent;
+    overflow: hidden;
+    touch-action: manipulation;
+  }
+
+  .vote-btn:active {
+    transform: scale(0.96);
+  }
+
+  .vote-btn .icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 26px;
+    flex-shrink: 0;
+  }
+
+  .vote-btn.instagram .icon { background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); }
+  .vote-btn.facebook .icon { background: #1877F2; }
+  .vote-btn.linkedin .icon { background: #0A66C2; }
+  .vote-btn.tiktok .icon { background: #000; }
+
+  .vote-btn .label {
+    font-size: clamp(1rem, 3vw, 1.2rem);
+    font-weight: 600;
+    color: #fff;
+  }
+
+  .vote-btn .count {
+    font-size: 0.85rem;
+    font-weight: 500;
+    opacity: 0.5;
+    transition: opacity 0.3s;
+  }
+
+  .vote-btn.voted {
+    border-color: var(--magenta);
+    background: rgba(206, 2, 131, 0.15);
+  }
+
+  .vote-btn.voted .count {
+    opacity: 1;
+  }
+
+  .checkmark {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 28px;
+    height: 28px;
+    background: var(--magenta);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transform: scale(0);
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .vote-btn.voted .checkmark {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  .checkmark svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .results {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .result-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .result-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    width: 90px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .bar-track {
+    flex: 1;
+    height: 28px;
+    background: rgba(255,255,255,0.08);
+    border-radius: 14px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 14px;
+    transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+    min-width: 0;
+  }
+
+  .bar-fill.instagram { background: linear-gradient(90deg, #f09433, #dc2743, #bc1888); }
+  .bar-fill.facebook { background: #1877F2; }
+  .bar-fill.linkedin { background: #0A66C2; }
+  .bar-fill.tiktok { background: linear-gradient(90deg, #25F4EE, #FE2C55); }
+
+  .result-count {
+    font-size: 0.85rem;
+    font-weight: 700;
+    width: 50px;
+    text-align: left;
+    flex-shrink: 0;
+  }
+
+  .cooldown-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(2, 77, 100, 0.95);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+
+  .cooldown-overlay.show {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .cooldown-check {
+    width: 80px;
+    height: 80px;
+    background: var(--magenta);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .cooldown-check svg {
+    width: 40px;
+    height: 40px;
+  }
+
+  .cooldown-text {
+    font-size: 1.5rem;
+    font-weight: 700;
+  }
+
+  .cooldown-sub {
+    font-size: 1rem;
+    opacity: 0.6;
+    margin-top: 6px;
+  }
+
+  @keyframes popIn {
+    0% { transform: scale(0); }
+    100% { transform: scale(1); }
+  }
+
+  .admin-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0,0,0,0.4);
+    padding: 10px 20px;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.8rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+    z-index: 50;
+  }
+
+  .admin-bar.show {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .admin-bar button {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.8rem;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+
+  .total {
+    font-size: 0.9rem;
+    font-weight: 500;
+    opacity: 0.5;
+    margin-top: 16px;
+  }
+
+  .storage-warn {
+    position: fixed;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(225, 213, 85, 0.9);
+    color: #024D64;
+    padding: 6px 16px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    z-index: 200;
+    display: none;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div class="storage-warn" id="storage-warn">Votes are in memory only - don't close this tab</div>
+
+<div class="container">
+  <h1>Which platform do you use most?</h1>
+  <p class="subtitle">Tap your favorite to vote</p>
+
+  <div class="options">
+    <div class="vote-btn instagram" data-platform="instagram" role="button" tabindex="0">
+      <div class="checkmark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+      </div>
+      <div class="icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="#fff"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+      </div>
+      <span class="label">Instagram</span>
+      <span class="count" id="count-instagram">0 votes</span>
+    </div>
+
+    <div class="vote-btn facebook" data-platform="facebook" role="button" tabindex="0">
+      <div class="checkmark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+      </div>
+      <div class="icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="#fff"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+      </div>
+      <span class="label">Facebook</span>
+      <span class="count" id="count-facebook">0 votes</span>
+    </div>
+
+    <div class="vote-btn linkedin" data-platform="linkedin" role="button" tabindex="0">
+      <div class="checkmark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+      </div>
+      <div class="icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="#fff"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+      </div>
+      <span class="label">LinkedIn</span>
+      <span class="count" id="count-linkedin">0 votes</span>
+    </div>
+
+    <div class="vote-btn tiktok" data-platform="tiktok" role="button" tabindex="0">
+      <div class="checkmark">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+      </div>
+      <div class="icon">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="#fff"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1v-3.5a6.37 6.37 0 00-.79-.05A6.34 6.34 0 003.15 15.2a6.34 6.34 0 0010.86 4.46V13.2a8.16 8.16 0 004.77 1.52v-3.4a4.85 4.85 0 01-1.19-.15 4.83 4.83 0 01-2-.97V6.69h4z"/></svg>
+      </div>
+      <span class="label">TikTok</span>
+      <span class="count" id="count-tiktok">0 votes</span>
+    </div>
+  </div>
+
+  <div class="results" id="results">
+    <div class="result-row">
+      <span class="result-label">Instagram</span>
+      <div class="bar-track"><div class="bar-fill instagram" id="bar-instagram" style="width:0%"></div></div>
+      <span class="result-count" id="pct-instagram">0%</span>
+    </div>
+    <div class="result-row">
+      <span class="result-label">Facebook</span>
+      <div class="bar-track"><div class="bar-fill facebook" id="bar-facebook" style="width:0%"></div></div>
+      <span class="result-count" id="pct-facebook">0%</span>
+    </div>
+    <div class="result-row">
+      <span class="result-label">LinkedIn</span>
+      <div class="bar-track"><div class="bar-fill linkedin" id="bar-linkedin" style="width:0%"></div></div>
+      <span class="result-count" id="pct-linkedin">0%</span>
+    </div>
+    <div class="result-row">
+      <span class="result-label">TikTok</span>
+      <div class="bar-track"><div class="bar-fill tiktok" id="bar-tiktok" style="width:0%"></div></div>
+      <span class="result-count" id="pct-tiktok">0%</span>
+    </div>
+  </div>
+
+  <p class="total" id="total-votes">0 total votes</p>
+</div>
+
+<!-- Thank you overlay -->
+<div class="cooldown-overlay" id="cooldown">
+  <div class="cooldown-check">
+    <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 13l4 4L19 7"/></svg>
+  </div>
+  <p class="cooldown-text">Thanks for voting!</p>
+  <p class="cooldown-sub">Next person, step right up</p>
+</div>
+
+<!-- Admin bar - triple tap bottom-right corner to toggle -->
+<div class="admin-bar" id="admin-bar">
+  <span id="admin-total">Total: 0</span>
+  <div style="display:flex;gap:8px;">
+    <button onclick="exportCSV()">Export CSV</button>
+    <button onclick="resetVotes()">Reset votes</button>
+  </div>
+</div>
+
+<script>
+  const STORAGE_KEY = 'ensora-booth-votes-aota';
+  const DEFAULT_VOTES = { instagram: 0, facebook: 0, linkedin: 0, tiktok: 0 };
+  let storageAvailable = false;
+
+  // Test if localStorage actually works (fails on some iPad/kiosk configs)
+  function testStorage() {
+    try {
+      const testKey = '__storage_test__';
+      localStorage.setItem(testKey, '1');
+      localStorage.removeItem(testKey);
+      return true;
+    } catch(e) {
+      return false;
+    }
+  }
+
+  storageAvailable = testStorage();
+
+  if (!storageAvailable) {
+    document.getElementById('storage-warn').style.display = 'block';
+  }
+
+  let votes = loadVotes();
+  let cooldownActive = false;
+  const COOLDOWN_MS = 2500;
+  let touchHandled = false;
+
+  function loadVotes() {
+    if (storageAvailable) {
+      try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if ('twitter' in parsed && !('tiktok' in parsed)) {
+            return { instagram: parsed.instagram || 0, facebook: parsed.facebook || 0, linkedin: parsed.linkedin || 0, tiktok: 0 };
+          }
+          return { ...DEFAULT_VOTES, ...parsed };
+        }
+      } catch(e) {}
+    }
+    return { ...DEFAULT_VOTES };
+  }
+
+  function saveVotes() {
+    if (storageAvailable) {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(votes)); } catch(e) {}
+    }
+  }
+
+  updateDisplay();
+
+  function vote(platform) {
+    if (cooldownActive) return;
+    
+    cooldownActive = true;
+    votes[platform]++;
+    saveVotes();
+    
+    const btns = document.querySelectorAll('.vote-btn');
+    btns.forEach(b => b.classList.remove('voted'));
+    document.querySelector(`.vote-btn.${platform}`).classList.add('voted');
+    
+    updateDisplay();
+    
+    const overlay = document.getElementById('cooldown');
+    overlay.classList.add('show');
+    
+    setTimeout(() => {
+      overlay.classList.remove('show');
+      btns.forEach(b => b.classList.remove('voted'));
+      cooldownActive = false;
+    }, COOLDOWN_MS);
+  }
+
+  function updateDisplay() {
+    const total = Object.values(votes).reduce((a, b) => a + b, 0);
+    
+    for (const [key, val] of Object.entries(votes)) {
+      const pct = total > 0 ? Math.round((val / total) * 100) : 0;
+      document.getElementById(`count-${key}`).textContent = `${val} vote${val !== 1 ? 's' : ''}`;
+      document.getElementById(`bar-${key}`).style.width = `${pct}%`;
+      document.getElementById(`pct-${key}`).textContent = `${pct}%`;
+    }
+    
+    document.getElementById('total-votes').textContent = `${total} total vote${total !== 1 ? 's' : ''}`;
+    document.getElementById('admin-total').textContent = `Total: ${total}`;
+  }
+
+  function exportCSV() {
+    const total = Object.values(votes).reduce((a, b) => a + b, 0);
+    const now = new Date().toLocaleString();
+    let csv = 'Platform,Votes,Percentage\n';
+    for (const [key, val] of Object.entries(votes)) {
+      const name = key.charAt(0).toUpperCase() + key.slice(1);
+      const pct = total > 0 ? ((val / total) * 100).toFixed(1) : '0.0';
+      csv += `${name},${val},${pct}%\n`;
+    }
+    csv += `\nTotal Votes,${total}\n`;
+    csv += `Exported,${now}\n`;
+
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `booth-votes-${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function resetVotes() {
+    if (confirm('Reset all votes to zero?')) {
+      for (const key in votes) votes[key] = 0;
+      saveVotes();
+      updateDisplay();
+    }
+  }
+
+  // Touch + click handling that prevents double-firing on iPad
+  document.querySelectorAll('.vote-btn').forEach(btn => {
+    btn.addEventListener('touchend', function(e) {
+      e.preventDefault();
+      touchHandled = true;
+      const platform = this.getAttribute('data-platform');
+      if (platform) vote(platform);
+      setTimeout(() => { touchHandled = false; }, 400);
+    }, { passive: false });
+
+    btn.addEventListener('click', function(e) {
+      if (touchHandled) return;
+      const platform = this.getAttribute('data-platform');
+      if (platform) vote(platform);
+    });
+  });
+
+  // Triple-tap bottom-right corner to show admin bar
+  let adminTaps = 0;
+  let adminTimer = null;
+
+  function handleAdminTap(x, y) {
+    const nx = x / window.innerWidth;
+    const ny = y / window.innerHeight;
+    if (nx > 0.75 && ny > 0.85) {
+      adminTaps++;
+      clearTimeout(adminTimer);
+      adminTimer = setTimeout(() => { adminTaps = 0; }, 800);
+      if (adminTaps >= 3) {
+        document.getElementById('admin-bar').classList.toggle('show');
+        adminTaps = 0;
+      }
+    }
+  }
+
+  document.addEventListener('touchend', (e) => {
+    if (e.changedTouches && e.changedTouches.length > 0) {
+      handleAdminTap(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    handleAdminTap(e.clientX, e.clientY);
+  });
+
+  // Prevent double-tap zoom and pinch zoom on iPad
+  document.addEventListener('dblclick', (e) => e.preventDefault());
+  document.addEventListener('gesturestart', (e) => e.preventDefault());
+  document.addEventListener('gesturechange', (e) => e.preventDefault());
+</script>
+</body>
+</html>
